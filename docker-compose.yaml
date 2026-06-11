@@ -9,8 +9,8 @@ services:
       - "war_network"
     volumes:
       - "movie_data:/usr/share/nginx/html"
-    env_file:
-      - "movie.env"
+    #env_file:
+      #- "movie.env"
     deploy:
       replicas: 2
       resources:
@@ -32,8 +32,8 @@ services:
       - "db_network"
     volumes:
       - "jar_data:/usr/share/nginx/html"
-    secrets:
-      - "db_password"
+    #secrets:
+      #- "db_password"
     depends_on:
       - "db"
     deploy:
@@ -70,43 +70,43 @@ services:
           cpus: "0.5"
           memory: "128M"
 
-  db:
-    image: "mysql:8.0"
-    networks:
-      - "db_network"
-    volumes:
-      - "db_data:/var/lib/mysql"
-    environment:
-      MYSQL_ROOT_PASSWORD_FILE: "/run/secrets/db_password"
-      MYSQL_DATABASE: "appdb"
-      MYSQL_USER: "appuser"
-      MYSQL_PASSWORD_FILE: "/run/secrets/db_password"
-    secrets:
-      - "db_password"
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "1G"
-        reservations:
-          cpus: "0.5"
-          memory: "512M"
-      restart_policy:
-        condition: "any"
-        delay: "10s"
-        max_attempts: 3
-        window: "30s"
+  #db:
+    #image: "mysql:8.0"
+    #networks:
+     # - "db_network"
+    #volumes:
+     # - "db_data:/var/lib/mysql"
+    #environment:
+     # MYSQL_ROOT_PASSWORD_FILE: "/run/secrets/db_password"
+      #MYSQL_DATABASE: "appdb"
+      #MYSQL_USER: "appuser"
+      #MYSQL_PASSWORD_FILE: "/run/secrets/db_password"
+    #secrets:
+     # - "db_password"
+    #deploy:
+     # replicas: 1
+      #resources:
+       # limits:
+        #  cpus: "1.0"
+         # memory: "1G"
+        #reservations:
+    #      cpus: "0.5"
+     #     memory: "512M"
+     # restart_policy:
+      #  condition: "any"
+       # delay: "10s"
+        #max_attempts: 3
+        #window: "30s"
 
 volumes:
   movie_data:
   jar_data:
   war_data:
-  db_data:
+  #db_data:
 
-secrets:
-  db_password:
-    external: true
+#secrets:
+ # db_password:
+  #  external: true
 
 networks:
   movie_network:
