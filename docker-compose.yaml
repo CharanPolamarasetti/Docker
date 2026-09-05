@@ -1,117 +1,51 @@
-version: "3.9"
 services:
-  movie:
-    image: "charanpolamarasetti/peddi:1.0"
-    ports:
-      - "1111:80"
-    networks:
-      - "movie_network"
-      - "war_network"
-    volumes:
-      - "movie_data:/usr/share/nginx/html"
-    env_file:
-      - "movie.env"
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "512M"
-        reservations:
-          cpus: "0.5"
-          memory: "128M"
-      restart_policy:
-        condition: "none"
 
-  jar:
-    image: "charanpolamarasetti/jarimage:1.0"
-    ports:
-      - "2222:8080"
-    networks:
-      - "jar_network"
-      - "db_network"
-    volumes:
-      - "jar_data:/usr/share/nginx/html"
-    secrets:
-      - "db_password"
-    depends_on:
-      - "db"
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "512M"
-        reservations:
-          cpus: "0.5"
-          memory: "128M"
-      restart_policy:
-        condition: "on-failure"
-        delay: "5s"
-        max_attempts: 2
-        window: "20s"
-
-  war:
-    image: "charanpolamarasetti/webappimg:1.0"
-    ports:
-      - "3333:8080"
-    networks:
-      - "war_network"
-      - "movie_network"
-    volumes:
-      - "war_data:/usr/share/nginx/html"
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "512M"
-        reservations:
-          cpus: "0.5"
-          memory: "128M"
-
-  db:
-    image: "mysql:8.0"
-    networks:
-      - "db_network"
-    volumes:
-      - "db_data:/var/lib/mysql"
+  postgres:
+    image: postgres:16-alpine
+    container_name: app_postgres
     environment:
-      MYSQL_ROOT_PASSWORD_FILE: "/run/secrets/db_password"
-      MYSQL_DATABASE: "appdb"
-      MYSQL_USER: "appuser"
-      MYSQL_PASSWORD_FILE: "/run/secrets/db_password"
-    secrets:
-      - "db_password"
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "1G"
-        reservations:
-          cpus: "0.5"
-          memory: "512M"
-      restart_policy:
-        condition: "any"
-        delay: "10s"
-        max_attempts: 3
-        window: "30s"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-net
 
-volumes:
-  movie_data:
-  jar_data:
-  war_data:
-  db_data:
-
-secrets:
-  db_password:
-    external: true
+  backend-service:
+    build:
+      context: ./backend-service
+    container_name: backend-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: backenddb
+      DB_USERNAME: backenddb_user
+      DB_PASSWORD: ${BACKENDDB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_SECONDS: 3600
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    networks:
+      - app-net
+    
+  frontend-service:
+    build:
+      context: ./frontend-service
+    container_name: frontend-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend-service
+    networks:
+      - app-net
 
 networks:
-  movie_network:
-    driver: "overlay"
-    attachable: true
-  jar_network:
-  war_network:
-  db_network:
+  app-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
